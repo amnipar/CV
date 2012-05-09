@@ -17,6 +17,11 @@ readFromTcrRectified p = unsafePerformIO $ creatingImage $
   withCString p $ \path ->
     c'read_from_tcr_rectified path
 
+readFromTcrRectified16Bit :: String -> Image GrayScale D32
+readFromTcrRectified16Bit p = unsafePerformIO $ creatingImage $
+  withCString p $ \path ->
+    c'read_from_tcr_rectified_16bit path
+
 readFromTcrMag :: String -> Image GrayScale D32
 readFromTcrMag p = unsafePerformIO $ creatingImage $
   withCString p $ \path ->

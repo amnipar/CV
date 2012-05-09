@@ -1,4 +1,5 @@
 #include "cvFiles.h"
+#include "cvProjection.h"
 #include <opencv2/imgproc/imgproc_c.h>
 #include <opencv2/highgui/highgui_c.h>
 #include <stdlib.h>
@@ -124,13 +125,13 @@ bool is_same_direction(float a, float b, float diff)
 
   lower_bound = a - diff;
   upper_bound = b + diff;
-  
+
   if (lower_bound < -pi) {
     return ((((lower_bound + 2*pi) < b) || -pi < b) && b < upper_bound)
   }
   else
   if (upper_bound > pi) {
-    return (lower_bound < b && (b < pi || b < (upper_bound - 2*pi))); 
+    return (lower_bound < b && (b < pi || b < (upper_bound - 2*pi)));
   }
   else {
     return (lower_bound < b && b < upper_bound);
@@ -142,13 +143,13 @@ bool is_same_direction(float a, float b, float diff)
 float calc_directionality_1(float *pos, uint_t stride)
 {
   float result, dir_c, dir_a, dir_b, dir_diff_s1, dir_diff_s2, value, diff_s, diff_c;
-  
+
   result = 0;
   dir_c = *pos;
   if (direction_difference(dir_c, pi) < dir_diff_small || direction_difference(dir_c, 0) < dir_diff_small) {
     dir_a = *(pos - stride);
     dir_b = *(pos + stride);
-    
+
     value = *(pos - stride - 1);
     dir_diff_s1 = direction_difference(dir_c, value);
     value = *(pos - 1);
@@ -156,7 +157,7 @@ float calc_directionality_1(float *pos, uint_t stride)
     value = (*pos + stride - 1);
     dir_diff_s1 += direction_difference(dir_c, value);
     dir_diff_s1 /= 3;
-    
+
     value = *(pos - stride + 1);
     dir_diff_s2 = direction_difference(dir_c, value);
     value = *(pos + 1);
@@ -164,14 +165,14 @@ float calc_directionality_1(float *pos, uint_t stride)
     value = *(pos + stride + 1);
     dir_diff_s2 += direction_difference(dir_c, value);
     dir_diff_s2 /= 3;
-    
+
     if (dir_diff_s1 > dir_diff_s2) {
       diff_s = dir_diff_s1;
     }
     else {
       diff_s = dir_diff_s2;
     }
-    
+
     if (diff_s > dir_diff_small) {
       diff_c = direction_difference(dir_c, dir_a);
       if (diff_c < dir_diff_small) {
@@ -197,13 +198,13 @@ float calc_directionality_1(float *pos, uint_t stride)
 float calc_directionality_2(float *pos, uint_t stride)
 {
   float result, dir_c, dir_a, dir_b, dir_diff_s1, dir_diff_s2, value, diff_s, diff_c;
-  
+
   result = 0;
   dir_c = *pos;
   if (direction_difference(dir_c, 3*pi/4) < dir_diff_small || direction_difference(dir_c, -pi/4) < dir_diff_small) {
     dir_a = *(pos - stride + 1);
     dir_b = *(pos + stride - 1);
-    
+
     value = *(pos - stride - 1);
     dir_diff_s1 = direction_difference(dir_c, value);
     value = *(pos - stride);
@@ -211,7 +212,7 @@ float calc_directionality_2(float *pos, uint_t stride)
     value = (*pos - 1);
     dir_diff_s1 += direction_difference(dir_c, value);
     dir_diff_s1 /= 3;
-    
+
     value = *(pos + stride + 1);
     dir_diff_s2 = direction_difference(dir_c, value);
     value = *(pos + stride);
@@ -219,14 +220,14 @@ float calc_directionality_2(float *pos, uint_t stride)
     value = *(pos + 1);
     dir_diff_s2 += direction_difference(dir_c, value);
     dir_diff_s2 /= 3;
-    
+
     if (dir_diff_s1 > dir_diff_s2) {
       diff_s = dir_diff_s1;
     }
     else {
       diff_s = dir_diff_s2;
     }
-    
+
     if (diff_s > dir_diff_small) {
       diff_c = direction_difference(dir_c, dir_a);
       if (diff_c < dir_diff_small) {
@@ -252,13 +253,13 @@ float calc_directionality_2(float *pos, uint_t stride)
 float calc_directionality_3(float *pos, uint_t stride)
 {
   float result, dir_c, dir_a, dir_b, dir_diff_s1, dir_diff_s2, value, diff_s, diff_c;
-  
+
   result = 0;
   dir_c = *pos;
   if (direction_difference(dir_c, pi/2) < dir_diff_small || direction_difference(dir_c, -pi/2) < dir_diff_small) {
     dir_a = *(pos + 1);
     dir_b = *(pos - 1);
-    
+
     value = *(pos - stride - 1);
     dir_diff_s1 = direction_difference(dir_c, value);
     value = *(pos - stride);
@@ -266,7 +267,7 @@ float calc_directionality_3(float *pos, uint_t stride)
     value = (*pos - stride + 1);
     dir_diff_s1 += direction_difference(dir_c, value);
     dir_diff_s1 /= 3;
-    
+
     value = *(pos + stride - 1);
     dir_diff_s2 = direction_difference(dir_c, value);
     value = *(pos + stride);
@@ -274,14 +275,14 @@ float calc_directionality_3(float *pos, uint_t stride)
     value = *(pos + stride + 1);
     dir_diff_s2 += direction_difference(dir_c, value);
     dir_diff_s2 /= 3;
-    
+
     if (dir_diff_s1 > dir_diff_s2) {
       diff_s = dir_diff_s1;
     }
     else {
       diff_s = dir_diff_s2;
     }
-    
+
     if (diff_s > dir_diff_small) {
       diff_c = direction_difference(dir_c, dir_a);
       if (diff_c < dir_diff_small) {
@@ -307,13 +308,13 @@ float calc_directionality_3(float *pos, uint_t stride)
 float calc_directionality_4(float *pos, uint_t stride)
 {
   float result, dir_c, dir_a, dir_b, dir_diff_s1, dir_diff_s2, value, diff_s, diff_c;
-  
+
   result = 0;
   dir_c = *pos;
   if (direction_difference(dir_c, pi/4) < dir_diff_small || direction_difference(dir_c, -3*pi/4) < dir_diff_small) {
     dir_a = *(pos + stride + 1);
     dir_b = *(pos - stride - 1);
-    
+
     value = *(pos - stride);
     dir_diff_s1 = direction_difference(dir_c, value);
     value = *(pos - stride + 1);
@@ -321,7 +322,7 @@ float calc_directionality_4(float *pos, uint_t stride)
     value = (*pos + 1);
     dir_diff_s1 += direction_difference(dir_c, value);
     dir_diff_s1 /= 3;
-    
+
     value = *(pos - 1);
     dir_diff_s2 = direction_difference(dir_c, value);
     value = *(pos + stride - 1);
@@ -329,14 +330,14 @@ float calc_directionality_4(float *pos, uint_t stride)
     value = *(pos + stride);
     dir_diff_s2 += direction_difference(dir_c, value);
     dir_diff_s2 /= 3;
-    
+
     if (dir_diff_s1 > dir_diff_s2) {
       diff_s = dir_diff_s1;
     }
     else {
       diff_s = dir_diff_s2;
     }
-    
+
     if (diff_s > dir_diff_small) {
       diff_c = direction_difference(dir_c, dir_a);
       if (diff_c < dir_diff_small) {
@@ -561,7 +562,7 @@ IplImage *derivative_direction(IplImage *src, float ignore_val, float ignore_eps
     tr_pos = tr_data + y * tr_stride + 2;
     ta_pos = ta_data + y * ta_stride + 2;
     for (x = 2; x < width - 2; x++, dst_pos++, tr_pos++, ta_pos++) {
-      a = calc_directionality_1(ta_pos, ta_stride) + 
+      a = calc_directionality_1(ta_pos, ta_stride) +
           0.5 * calc_directionality_2(ta_pos, ta_stride) +
           calc_directionality_3(ta_pos, ta_stride) +
           0.5 * calc_directionality_4(ta_pos, ta_stride);
@@ -1094,6 +1095,78 @@ IplImage *to_8bit(IplImage *src)
   return dst;
 }
 
+IplImage *unnormalized_to_16bit(IplImage *src)
+{
+  IplImage *dst;
+  float *src_data, *src_pos, value;
+  unsigned short *dst_data, *dst_pos;
+  uint_t x, y, width, height, src_stride, dst_stride;
+  int temp;
+  CvSize size;
+
+  width = src->width;
+  height = src->height;
+
+  size.width = width;
+  size.height = height;
+  dst = cvCreateImage(size, IPL_DEPTH_16U, 1);
+
+  src_data = (float*)src->imageData;
+  src_stride = (uint_t)(src->widthStep / sizeof(float));
+  dst_data = (unsigned short*)dst->imageData;
+  dst_stride = (uint_t)(dst->widthStep / sizeof(unsigned short));
+
+  for (y = 0; y < height; y++) {
+    src_pos = src_data + y * src_stride;
+    dst_pos = dst_data + y * dst_stride;
+    for (x = 0; x < width; x++, src_pos++, dst_pos++) {
+      value = *src_pos;
+      temp = (int)(value);
+      if (temp < 0) temp = 0;
+      else if (temp > 65535) temp = 65535;
+      *dst_pos = (unsigned short)temp;
+    }
+  }
+
+  return dst;
+}
+
+IplImage *normalized_to_16bit(IplImage *src)
+{
+  IplImage *dst;
+  float *src_data, *src_pos, value;
+  unsigned short *dst_data, *dst_pos;
+  uint_t x, y, width, height, src_stride, dst_stride;
+  int temp;
+  CvSize size;
+
+  width = src->width;
+  height = src->height;
+
+  size.width = width;
+  size.height = height;
+  dst = cvCreateImage(size, IPL_DEPTH_16U, 1);
+
+  src_data = (float*)src->imageData;
+  src_stride = (uint_t)(src->widthStep / sizeof(float));
+  dst_data = (unsigned short*)dst->imageData;
+  dst_stride = (uint_t)(dst->widthStep / sizeof(unsigned short));
+
+  for (y = 0; y < height; y++) {
+    src_pos = src_data + y * src_stride;
+    dst_pos = dst_data + y * dst_stride;
+    for (x = 0; x < width; x++, src_pos++, dst_pos++) {
+      value = *src_pos;
+      temp = (int)(65535 * value);
+      if (temp < 0) temp = 0;
+      else if (temp > 65535) temp = 65535;
+      *dst_pos = (unsigned short)temp;
+    }
+  }
+
+  return dst;
+}
+
 IplImage *read_from_tcr_mag(const char *path)
 {
   IplImage *src, *tmp1, *tmp2, *dst;
@@ -1127,6 +1200,81 @@ IplImage *calc_derivative_direction(IplImage *src)
 IplImage *read_from_tcr_rectified(const char *path)
 {
   IplImage *src, *tmp1, *tmp2, *dst;
+  float *tmp_data, *tmp_pos, value, min, max;
+  uint_t *timestamps, tmp_stride, width, height, x, y, r;
+  uint_t minx, maxx, startx, endx, miny, maxy, starty, endy;
+
+  src = read_from_tcr(path, &timestamps);
+  if (src == NULL || timestamps == NULL) {
+    return NULL;
+  }
+
+
+  /*tmp1 = mean_fill_holes(src, 2, 0, 0.001);*/
+  /*cvReleaseImage(&tmp);*/
+  /*tmp1 = filter_mean(src, 5, 0, 0.001);*/
+  /*cvSaveImage("tcr_mean.png", tmp, 0);*/
+  /*tmp2 = image_diff(src, tmp1, 0, 0.001);*/
+  /*tmp2 = abs_diff_mean(tmp1, 0, 0.001);*/
+  /*cvSaveImage("tcr_diff.png", dst, 0);*/
+  tmp1 = box_mean_abs_diff(src, 7, 0, 0.001);
+  /*cvReleaseImage(&src);*/
+  /*cvReleaseImage(&tmp1);*/
+  stretch_histogram_avg_sdv(tmp1, 0, 0.001);
+  /*equalize_histogram(tmp2, 0, 0.001);*/
+  /*stretch_histogram(tmp1, 0, 0.001);*/
+
+  width = tmp1->width;
+  height = tmp1->height;
+  tmp_data = (float*)tmp1->imageData;
+  tmp_stride = (uint_t)(tmp1->widthStep / sizeof(float));
+
+  minx = 2000000000;
+  maxx = 0;
+  miny = 2000000000;
+  maxy = 0;
+  min = 2000000000;
+  max = 0;
+  for (y = 0; y < height; y++) {
+    tmp_pos = tmp_data + y * tmp_stride;
+    for (x = 0; x < width; x++, tmp_pos++) {
+      value = *tmp_pos;
+      if (value > 0.001) {
+        if (value < min) min = value; else if (value > max) max = value;
+        if (x < minx) minx = x; else if (x > maxx) maxx = x;
+        if (y < miny) miny = y; else if (y > maxy) maxy = y;
+      }
+    }
+  }
+  printf("min=%f max=%f minx=%d maxx=%d miny=%d maxy=%d\n", min, max, minx, maxx, miny, maxy);
+
+  startx = 0;
+  if (minx > 2) startx = minx - 2;
+  endx = width - 1;
+  if (maxx < endx - 2) endx = maxx + 2;
+  starty = 0;
+  if (miny >  2) starty = miny - 2;
+  endy = height - 1;
+  if (maxy < endy - 2) endy = maxy + 2;
+
+  tmp2 = rectify_tcr(tmp1, timestamps, startx, endx, starty, endy);
+  cvReleaseImage(&tmp1);
+  /*dst = to_8bit(tmp2);*/
+  /*cvReleaseImage(&tmp2);*/
+  /*cvSaveImage("tcr_eq.png", dst, 0);*/
+  /*cvReleaseImage(&dst);*/
+  /*
+  tmp1 = project_polar_partial(tmp2, 1026, 958, (pi+13*pi/128), (pi+19*pi/128), 750, 850);
+  cvReleaseImage(&tmp1);
+  */
+  free(timestamps);
+
+  return tmp2;
+}
+
+IplImage *read_from_tcr_rectified_16bit(const char *path)
+{
+  IplImage *src, *tmp1, *tmp2, *dst;
   float *tmp_data, *tmp_pos, value;
   uint_t *timestamps, tmp_stride, width, height, x, y, r;
   uint_t minx, maxx, startx, endx, miny, maxy, starty, endy;
@@ -1136,19 +1284,8 @@ IplImage *read_from_tcr_rectified(const char *path)
     return NULL;
   }
 
-  /*src = mean_fill_holes(tmp, 3, 0, 0.001);*/
-  /*cvReleaseImage(&tmp);*/
-  /*tmp1 = filter_mean(src, 5, 0, 0.001);*/
-  /*cvSaveImage("tcr_mean.png", tmp, 0);*/
-  /*tmp2 = image_diff(src, tmp1, 0, 0.001);*/
-  /*tmp2 = abs_diff_mean(tmp1, 0, 0.001);*/
-  /*cvSaveImage("tcr_diff.png", dst, 0);*/
-  tmp1 = box_mean_abs_diff(src, 5, 0, 0.001);
+  tmp1 = mean_fill_holes(src, 1, 0, 0.001);
   cvReleaseImage(&src);
-  /*cvReleaseImage(&tmp1);*/
-  stretch_histogram_avg_sdv(tmp1, 0, 0.001);
-  /*equalize_histogram(tmp2, 0, 0.001);*/
-  /*stretch_histogram(tmp2, 0, 0.001);*/
 
   width = tmp1->width;
   height = tmp1->height;
@@ -1182,12 +1319,15 @@ IplImage *read_from_tcr_rectified(const char *path)
 
   tmp2 = rectify_tcr(tmp1, timestamps, startx, endx, starty, endy);
   cvReleaseImage(&tmp1);
-  dst = to_8bit(tmp2);
-  cvReleaseImage(&tmp2);
-  cvSaveImage("tcr_eq.png", dst, 0);
+
+  dst = unnormalized_to_16bit(tmp2);
+  cvSaveImage("tcr_rec16.png", dst, 0);
+  cvReleaseImage(&dst);
   free(timestamps);
 
-  return dst;
+  stretch_histogram_avg_sdv(tmp2, 0, 0.001);
+
+  return tmp2;
 }
 
 IplImage *read_from_tcr_rectified_old(const char *path)

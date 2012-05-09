@@ -4,8 +4,8 @@ module CV.Image (
 -- * Basic types
  Image(..)
 , create
-, empty 
-, emptyCopy 
+, empty
+, emptyCopy
 , cloneImage
 , withClone
 , withCloneValue
@@ -70,13 +70,13 @@ module CV.Image (
 , tileImages
 
 -- * Conversions
-, rgbToGray 
+, rgbToGray
 , grayToRGB
-, rgbToLab 
+, rgbToLab
 , bgrToRgb
 , rgbToBgr
-, unsafeImageTo32F 
-, unsafeImageTo8Bit 
+, unsafeImageTo32F
+, unsafeImageTo8Bit
 
 -- * Low level access operations
 , BareImage(..)
@@ -427,37 +427,37 @@ enum CvtCodes {
     CV_BayerGB2BGR_VNG =63,
     CV_BayerRG2BGR_VNG =64,
     CV_BayerGR2BGR_VNG =65,
-    
+
     CV_BayerBG2RGB_VNG =CV_BayerRG2BGR_VNG,
     CV_BayerGB2RGB_VNG =CV_BayerGR2BGR_VNG,
     CV_BayerRG2RGB_VNG =CV_BayerBG2BGR_VNG,
     CV_BayerGR2RGB_VNG =CV_BayerGB2BGR_VNG,
-    
+
     CV_BGR2HSV_FULL = 66,
     CV_RGB2HSV_FULL = 67,
     CV_BGR2HLS_FULL = 68,
     CV_RGB2HLS_FULL = 69,
-    
+
     CV_HSV2BGR_FULL = 70,
     CV_HSV2RGB_FULL = 71,
     CV_HLS2BGR_FULL = 72,
     CV_HLS2RGB_FULL = 73,
-    
+
     CV_LBGR2Lab     = 74,
     CV_LRGB2Lab     = 75,
     CV_LBGR2Luv     = 76,
     CV_LRGB2Luv     = 77,
-    
+
     CV_Lab2LBGR     = 78,
     CV_Lab2LRGB     = 79,
     CV_Luv2LBGR     = 80,
     CV_Luv2LRGB     = 81,
-    
+
     CV_BGR2YUV      = 82,
     CV_RGB2YUV      = 83,
     CV_YUV2BGR      = 84,
     CV_YUV2RGB      = 85,
-    
+
     CV_COLORCVT_MAX  =100
 };
 #endc
@@ -917,7 +917,7 @@ setCatch = do
          func <- peekCString cstr1
          msg  <- peekCString cstr2
          file <- peekCString cstr3
-         throw (CvException (fromIntegral i) func msg file (fromIntegral j)) 
+         throw (CvException (fromIntegral i) func msg file (fromIntegral j))
          return 0
    cb <- mk'CvErrorCallback catch
    c'cvRedirectError cb nullPtr nullPtr
