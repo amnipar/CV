@@ -667,13 +667,23 @@ IplImage* wrapPerspective(IplImage* src, double a1, double a2, double a3
                                        , double a4, double a5, double a6
                                        , double a7, double a8, double a9)
 {
-    IplImage *res = cvCloneImage(src);
+    IplImage *tmp1, *tmp2, *res;
+    CvSize s;
+    s.width = src->width + 20;
+    s.height = src->height + 20;
+    tmp1 = cvCreateImage(s,src->depth,src->nChannels);
+    cvSetZero(tmp1);
+    cvCopyMakeBorder(src, tmp1, cvPoint(10,10), IPL_BORDER_REPLICATE, cvScalarAll(0));
+    tmp2 = cvCloneImage(tmp1);
+    res = cvCloneImage(src);
     double a[] = { a1,a2,a3,
                    a4,a5,a6,
                    a7,a8,a9};
 
     CvMat M = cvMat(3,3,CV_64FC1,a);
-    cvWarpPerspective(src, res, &M, CV_INTER_LINEAR+CV_WARP_FILL_OUTLIERS, cvScalarAll(0));
+    cvWarpPerspective(tmp1, tmp2, &M, CV_INTER_LINEAR+CV_WARP_FILL_OUTLIERS, cvScalarAll(0));
+    cvSetImageROI(tmp2, cvRect(10,10,src->width,src->height));
+    cvCopy(tmp2,res,NULL);
     return res;
 }
 
