@@ -280,6 +280,36 @@ IplImage* ensure8U(const IplImage *src)
 
 // Return image that is IPL_DEPTH_32F version of
 // given src
+IplImage* ensure64F(const IplImage *src)
+{
+ CvSize size;
+ IplImage *result;
+ int channels = src->nChannels;
+ int dstDepth = IPL_DEPTH_64F;
+ size = cvGetSize(src);
+ result = cvCreateImage(size,dstDepth,channels);
+
+ switch(src->depth) {
+  case IPL_DEPTH_32F:
+  case IPL_DEPTH_64F:
+   cvConvertScale(src,result,1,0); // Scale the values to [0,255]
+   return result;
+  case IPL_DEPTH_8U:
+  case IPL_DEPTH_8S:
+   cvConvertScale(src,result,1.0/255.0,0);
+   return result;
+  case IPL_DEPTH_16S:
+   cvConvertScale(src,result,1.0/65535.0,0);
+   return result;
+  case IPL_DEPTH_32S:
+   cvConvertScale(src,result,1.0/4294967295.0,0);
+   return result;
+  default:
+   printf("Cannot convert to floating image");
+   abort();
+ }
+}
+
 IplImage* ensure32F(const IplImage *src)
 {
  CvSize size;
@@ -307,7 +337,6 @@ IplImage* ensure32F(const IplImage *src)
   default:
    printf("Cannot convert to floating image");
    abort();
-
  }
 }
 
@@ -455,6 +484,30 @@ void blitImg(IplImage *a, IplImage *b,int offset_x, int offset_y)
  cvCopy(b,a,NULL);
  cvResetImageROI(a);
 // printf("Done!\n"); fflush(stdout);
+}
+
+// Assuming a is the bigger image
+void blitShadow(IplImage *a, IplImage *b)
+{
+ CvSize sa = cvGetSize(a);
+ CvSize sb = cvGetSize(b);
+
+ for ( int i=0; i<sb.width; i++ )
+  for ( int j=0; j<sb.height; j++ )
+   FGET(a,i,j) = FGET(b,i,j);
+
+ for ( int i=sb.width; i<sa.width; i++ )
+  for ( int j=0; j<sb.height; j++ )
+   FGET(a,i,j) = FGET(b,sb.width-1,j);
+
+ for ( int i=0; i<sb.width; i++ )
+  for ( int j=sb.height; j<sa.height; j++ )
+   FGET(a,i,j) = FGET(b,i,sb.height-1);
+
+ for ( int i=sb.width; i<sa.width; i++ )
+  for ( int j=sb.height; j<sa.height; j++ )
+   FGET(a,i,j) = FGET(b,sb.width-1,sb.height-1);
+
 }
 
 IplImage* makeEvenDown(IplImage *src)
@@ -670,13 +723,23 @@ IplImage* wrapPerspective(IplImage* src, double a1, double a2, double a3
                                        , double a4, double a5, double a6
                                        , double a7, double a8, double a9)
 {
-    IplImage *res = cvCloneImage(src);
+    IplImage *tmp1, *tmp2, *res;
+    CvSize s;
+    s.width = src->width + 20;
+    s.height = src->height + 20;
+    tmp1 = cvCreateImage(s,src->depth,src->nChannels);
+    cvSetZero(tmp1);
+    cvCopyMakeBorder(src, tmp1, cvPoint(10,10), IPL_BORDER_REPLICATE, cvScalarAll(0));
+    tmp2 = cvCloneImage(tmp1);
+    res = cvCloneImage(src);
     double a[] = { a1,a2,a3,
                    a4,a5,a6,
                    a7,a8,a9};
 
     CvMat M = cvMat(3,3,CV_64FC1,a);
-    cvWarpPerspective(src, res, &M, CV_INTER_LINEAR+CV_WARP_FILL_OUTLIERS, cvScalarAll(0));
+    cvWarpPerspective(tmp1, tmp2, &M, CV_INTER_LINEAR+CV_WARP_FILL_OUTLIERS, cvScalarAll(0));
+    cvSetImageROI(tmp2, cvRect(10,10,src->width,src->height));
+    cvCopy(tmp2,res,NULL);
     return res;
 }
 
@@ -2131,7 +2194,7 @@ int blobCount(IplImage *src)
 //@+node:aleator.20060413093124.1:sizeFilter
 IplImage* sizeFilter(IplImage *src, double minSize, double maxSize)
 {
-    IplImage* dst = cvCreateImage( cvGetSize(src), IPL_DEPTH_32F, 1 );
+    IplImage* dst = cvCreateImage( cvGetSize(src), IPL_DEPTH_8U, 1 );
     CvMemStorage* storage = cvCreateMemStorage(0);
     CvSeq* contour = 0;
 
@@ -2142,7 +2205,7 @@ IplImage* sizeFilter(IplImage *src, double minSize, double maxSize)
     {
         double area=fabs(cvContourArea(contour,CV_WHOLE_SEQ,0));
         if (area <=minSize || area >= maxSize) continue;
-        CvScalar color = cvScalar(1,1,1,1);
+        CvScalar color = cvScalar(255,255,255,255);
         cvDrawContours( dst, contour, color, color, -1, CV_FILLED, 8,
             cvPoint(0,0));
     }
@@ -2387,6 +2450,7 @@ for( int i = 0; i < seq->total; i++ )
     index += seq->elem_size;
     CV_NEXT_SEQ_ELEM( seq->elem_size, reader );
 }}
+
 
 #ifndef OpenCV24
 void wrapExtractMSER( CvArr* _img, CvArr* _mask, CvSeq** contours, CvMemStorage* storage, CvMSERParams *params ){
