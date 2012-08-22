@@ -10,7 +10,8 @@ import Foreign.Marshal.Array
 import System.IO.Unsafe
 {#import CV.Image#}
 import CV.ImageMathOp
-import CV.Matrix as M
+import qualified CV.Matrix as M
+import CV.Matrix (Matrix,withMatPtr)
 
 -- |Since DCT is valid only for even sized images, we provide a
 -- function to crop images to even sizes.
@@ -115,6 +116,15 @@ perspectiveTransform :: Real a => Image c d -> [a] -> Image c d
 perspectiveTransform img (map realToFrac -> [a1,a2,a3,a4,a5,a6,a7,a8,a9])
     = unsafePerformIO $ 
        withImage img $ \cimg -> creatingImage $ {#call wrapPerspective#} cimg a1 a2 a3 a4 a5 a6 a7 a8 a9
+
+perspectiveTransform' :: (CreateImage (Image c d)) => Matrix Float -> Image c d -> (Int,Int)-> Image c d
+perspectiveTransform' mat img size
+    = unsafePerformIO $ do
+       r <- create  size
+       withImage img $ \c_img ->
+         withMatPtr mat $ \c_mat ->
+         withImage r $ \c_r -> {#call wrapWarpPerspective#} (castPtr c_img) (castPtr c_r) (castPtr c_mat)
+       return r
 
 
 -- |Find a homography between two sets of points in. The resulting 3x3 matrix is returned as a list.
@@ -230,6 +240,21 @@ safePyrDown img = evenize result
      result = pyrDown img 
      (w,h)  = getSize result 
 
+-- | Enlargen the image so that its size is a power of two.
+minEnlarge :: Image GrayScale D32 -> Image GrayScale D32
+minEnlarge i = enlargeShadow (min (ceiling (logBase 2 (f w))) (ceiling (logBase 2 (f h)))) i
+    where 
+     f = fromIntegral
+     (w,h) = getSize i
+
+-- | Calculate an infinite gaussian pyramid of an image while keeping track of
+--   various corner cases and gotchas.
+gaussianPyramid :: Image GrayScale D32 -> [Image GrayScale D32]
+gaussianPyramid = iterate pyrDown' . minEnlarge
+    where 
+     pyrDown' i = let (w,h) = getSize i
+                  in if (w`div`2) <=1 || (h`div`2) <= 1 then i else pyrDown i
+
 -- |Calculate the laplacian pyramid of an image up to the nth level.
 --  Notice that the image size must be divisible by 2^n or opencv 
 --  will abort (TODO!)
@@ -247,11 +272,26 @@ reconstructFromLaplacian pyramid = foldl1 (\a b -> (pyrUp a) #+ b) (pyramid)
   --   safeAdd x y = sameSizePad y x #+ y  
 
 -- TODO: Could have wider type
--- |Enlarge image so, that it's size is divisible by 2^n 
+-- |Enlargen the image so that its size is divisible by 2^n. Fill the area
+--  outside the image with black.
 enlarge :: Int -> Image GrayScale D32 -> Image GrayScale D32
 enlarge n img =  unsafePerformIO $ do
                    i <- I.create (w2,h2)
                    blit i img (0,0)
+                   return i
+    where
+     (w,h) = getSize img
+     (w2,h2) = (pad w, pad h)
+     pad x = x + (np - x `mod` np)
+     np = 2^n
+
+-- | Enlargen the image so that its size is is divisible by 2^n. Replicate
+--   the border of the image.
+enlargeShadow :: Int -> Image GrayScale D32 -> Image GrayScale D32
+enlargeShadow n img =  unsafePerformIO $ do
+                   i <- create (w2,h2)
+                   withImage img $ \c_img -> 
+                    withImage i  $ \c_i   -> {#call blitShadow#} c_i c_img 
                    return i
     where
      (w,h) = getSize img
@@ -267,6 +307,15 @@ enum DistanceType {
 };
 #endc
 {#enum DistanceType {}#}
+#ifdef OpenCV24
+#c
+enum LabelType {
+     CCOMP = CV_DIST_LABEL_CCOMP
+    ,PIXEL = CV_DIST_LABEL_PIXEL
+};
+#endc
+{#enum LabelType {}#}
+#endif
 
 -- |Mask sizes accepted by distanceTransform
 data MaskSize = M3 | M5 deriving (Eq,Ord,Enum,Show)
@@ -281,6 +330,11 @@ distanceTransform dtype maskSize source = unsafePerformIO $ do
                                   (fromIntegral . fromEnum $ dtype) 
                                   (fromIntegral . fromEnum $ maskSize)
                                    nullPtr nullPtr
+#ifdef OpenCV24
+                                  (fromIntegral . fromEnum $ CCOMP)
+#endif
+
     return result
+
     -- TODO: Add handling for labels
     -- TODO: Add handling for custom masks

@@ -14,7 +14,8 @@ module CV.Drawing(
                 ,Drawable(..)
                 -- * Extra drawing operations
                 ,drawLinesOp
-                ,drawBox2Dop
+                ,drawPolyLineOp 
+                ,drawBox2Dop 
                 -- * Floodfill operations
                 ,fillOp
                 ,floodfill
@@ -37,12 +38,13 @@ import CV.Bindings.Types
 import CV.Bindings.Drawing
 import Utils.Point
 
-{#import CV.Image#}
+import CV.Image hiding (Complex)
+import qualified CV.Image
 
 import CV.ImageOp
 import Utils.GeometryClass
 import Utils.Rectangle
-import Data.Complex
+import Data.Complex as C
 
 -- | Is the shape filled or just a boundary?
 data ShapeStyle = Filled | Stroked Int
@@ -126,7 +128,7 @@ primFillPolyOp (c1,c2,c3) pts = ImgOp $ \i -> do
                                   let (xs,ys) = unzip pts
                                   xs' <- newArray $ map fromIntegral xs
                                   ys' <- newArray $ map fromIntegral  ys
-                                  {#call wrapFillPolygon#} img
+                                  {#call wrapFillPolygon#} (castPtr img)
                                        (fromIntegral $ length xs) xs' ys'
                                    (realToFrac c1) (realToFrac c2) (realToFrac c3)
                                   free xs'
@@ -149,8 +151,8 @@ primEllipseOp (c1,c2,c3) t (x,y) (r1,r2) a (a1,a2) =
         (fromIntegral t)
 
 
-instance Drawable DFT D32 where
-   type Color DFT D32  = Complex D32
+instance Drawable CV.Image.Complex D32 where
+   type Color CV.Image.Complex D32  = Complex D32
    putTextOp (r:+i)    = primTextOp (r,i,0) -- Boy does this feel silly :)
    lineOp (r:+i)       = primLineOp (r,i,0)
    circleOp (r:+i)     = primCircleOp (r,i,0)
@@ -158,6 +160,16 @@ instance Drawable DFT D32 where
    ellipseBoxOp (r:+i) = primEllipseBox (r,i,0,0)
    fillPolyOp (r:+i)   = primFillPolyOp (r,i,0)
    ellipseOp (r:+i)    = primEllipseOp (r,i,0)
+
+instance Drawable GrayScale D8 where
+    type Color GrayScale D8 = D8
+    putTextOp color = primTextOp (color,color,color) 
+    lineOp c = primLineOp (c,c,c) 
+    circleOp c = primCircleOp (c,c,c)
+    ellipseBoxOp c  = primEllipseBox (fromIntegral c,fromIntegral c,fromIntegral c,0) 
+    rectOp c = primRectOp (c,c,c)
+    fillPolyOp c = primFillPolyOp (c,c,c)
+    ellipseOp  c = primEllipseOp (c,c,c)
 
 instance Drawable GrayScale D32 where
     type Color GrayScale D32 = D32
@@ -174,7 +186,7 @@ fillOp :: (Int,Int) -> D32 -> D32 -> D32 -> Bool -> ImageOperation GrayScale D32
 fillOp (x,y) color low high floats =
     ImgOp $ \i -> do
       withImage i $ \img ->
-        ({#call wrapFloodFill#} img (fromIntegral x) (fromIntegral y)
+        ({#call wrapFloodFill#} (castPtr img) (fromIntegral x) (fromIntegral y)
             (realToFrac color) (realToFrac low) (realToFrac high) (toCINT $ floats))
     where
      toCINT False = 0
@@ -191,11 +203,17 @@ rectangle color thickness rect i =
 fillPoly :: Drawable c d => Color c d -> [(Int, Int)] -> Image c d -> IO (Image c d)
 fillPoly c pts i = operate (fillPolyOp c pts) i
 
--- | Draw a polyline
+-- | Draw a line segments
 drawLinesOp :: Drawable c d => Color c d -> Int -> [((Int, Int), (Int, Int))] -> CV.ImageOp.ImageOperation c d
 drawLinesOp color thickness segments =
     foldl (#>) nonOp
      $ map (\(a,b) -> lineOp color thickness a b) segments
+
+-- | Draw a polyline
+drawPolyLineOp :: Drawable c d => Color c d -> Int -> [((Int, Int))] -> CV.ImageOp.ImageOperation c d
+drawPolyLineOp color thickness segments = 
+    foldl (#>) nonOp 
+     $ map (\(a,b) -> lineOp color thickness a b) $ zip segments (tail segments)
 
 -- | Apply drawLinesOp to an image
 drawLines :: Drawable c d => Image c d -> Color c d -> Int -> [((Int, Int), (Int, Int))]
